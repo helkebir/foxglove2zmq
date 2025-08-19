@@ -12,6 +12,8 @@ from google.protobuf import descriptor_pb2, descriptor_pool, message_factory, js
 
 # Opcodes for the Foxglove binary protocol
 OP_MESSAGE_DATA = 0x01
+OP_TIME = 0x02
+OP_CODES_SUPPORTED = [OP_MESSAGE_DATA, OP_TIME]
 
 
 class FoxgloveToZMQRelay:
@@ -141,31 +143,45 @@ class FoxgloveToZMQRelay:
         """The main loop to receive, decode, and relay messages."""
         async for message_bytes in self.websocket:
             opcode = message_bytes[0]
-            if opcode != OP_MESSAGE_DATA:
+            if opcode not in OP_CODES_SUPPORTED:
                 continue
 
+
+
             try:
-                sub_id = struct.unpack('<I', message_bytes[1:5])[0]
-                timestamp = struct.unpack('<Q', message_bytes[5:13])[0]
-                binary_payload_bytes = message_bytes[13:]
+                if opcode == OP_MESSAGE_DATA:
+                    sub_id = struct.unpack('<I', message_bytes[1:1+4])[0]
+                    timestamp = struct.unpack('<Q', message_bytes[1+4:1+4+8])[0]
+                    binary_payload_bytes = message_bytes[1+4+8:]
 
-                channel_info = self.subscriptions.get(sub_id)
-                if not channel_info:
-                    print(f"⚠️ Received message for unknown subscription ID {sub_id}, skipping.")
-                    continue
+                    channel_info = self.subscriptions.get(sub_id)
+                    if not channel_info:
+                        print(f"⚠️ Received message for unknown subscription ID {sub_id}, skipping.")
+                        continue
 
-                payload_obj = self._decode_payload(channel_info, binary_payload_bytes)
-                if payload_obj is None:
-                    continue
+                    payload_obj = self._decode_payload(channel_info, binary_payload_bytes)
+                    if payload_obj is None:
+                        continue
 
-                topic = channel_info.get("topic", "unknown_topic")
-                wrapped_message = {
-                    "topic": topic,
-                    "type": channel_info.get("schemaName", "unknown_type"),
-                    "timestamp": timestamp,
-                    "payload": payload_obj
-                }
-                message_to_send = json.dumps(wrapped_message)
+                    topic = channel_info.get("topic", "unknown_topic")
+                    wrapped_message = {
+                        "topic": topic,
+                        "type": channel_info.get("schemaName", "unknown_type"),
+                        "timestamp": timestamp,
+                        "payload": payload_obj
+                    }
+                    message_to_send = json.dumps(wrapped_message)
+                elif opcode == OP_TIME:
+                    timestamp = struct.unpack('<Q', message_bytes[1:1+8])[0]
+
+                    topic = "/internal/time"
+                    wrapped_message = {
+                        "topic": topic,
+                        "type": "time",
+                        "timestamp": timestamp,
+                        "payload": "{}"
+                    }
+                    message_to_send = json.dumps(wrapped_message)
 
                 if self.verbosity >= 2:
                     print(f"Relaying wrapped message from topic '{topic}'...")

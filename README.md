@@ -29,7 +29,7 @@ decode binary payloads into JSON.
 [`ClientPublish` messages](https://docs.foxglove.dev/docs/sdk/websocket-server#handling-messages-from-the-app)
 and [`Parameter` updates](https://docs.foxglove.dev/docs/visualization/panels/parameters).
 - [ ] Add support for other [binary messages](https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#binary-messages):
-  - [ ] `0x02` - Time
+  - [x] `0x02` - Time
   - [ ] `0x03` - Service call responses
   - [ ] `0x04` - Fetch asset responses
 
