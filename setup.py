@@ -12,7 +12,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 setup(
     name="foxglove2zmq",
     version="0.1.0",
-    author="Your Name",
+    author="Hamza El-Kebir",
     author_email="ha.elkebir@gmail.com",
     description="A relay for forwarding Foxglove WebSocket messages to a ZMQ server.",
     long_description=long_description,
