@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foxglove2zmq"
+version = "0.1.0"
+authors = [
+  { name="Hamza El-Kebir", email="ha.elkebir@gmail.com" },
+]
+description = "A relay for forwarding Foxglove WebSocket messages to a ZMQ server."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Networking",
+    "Framework :: AsyncIO",
+]
+dependencies = [
+    "websockets>=10.0",
+    "pyzmq>=22.0",
+    "protobuf>=3.19",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/helkebir/foxglove2zmq"
+"Bug Tracker" = "https://github.com/helkebir/foxglove2zmq/issues"
+
+[project.scripts]
+foxglove2zmq = "foxglove2zmq.cli:main"

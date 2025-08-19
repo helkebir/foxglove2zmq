@@ -145,7 +145,8 @@ You can also import the classes into your own Python application for more advanc
 
 ```python
 import asyncio
-from foxglove2zmq import FoxgloveToZMQPushRelay, FoxgloveToZMQPubSubRelay
+from src.foxglove2zmq import FoxgloveToZMQPushRelay, FoxgloveToZMQPubSubRelay
+
 
 async def main():
     # Example for PUSH relay
@@ -156,6 +157,7 @@ async def main():
         discovery_timeout=5.0
     )
     await push_relay.run()
+
 
 if __name__ == "__main__":
     try:
@@ -177,16 +179,18 @@ including both `PUSH/PULL` and `PUB/SUB` patterns. First install the package, th
 
 ```
 foxglove2zmq/
-├── foxglove2zmq/  
-│   ├── __init__.py 
-│   └── cli.py
-│   └── relay.py
+├── src/
+│   └── foxglove2zmq/
+│       ├── __init__.py
+│       ├── relay.py
+│       └── cli.py
 ├── examples/
 │   ├── zmq_puller.py 
 │   └── zmq_relay.py
+├── LICENSE.md
+├── pyproj.toml
 ├── README.md
-├── requirements.txt  
-└── setup.py
+└── requirements.txt  
 ```
 
 ## **License**
