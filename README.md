@@ -2,7 +2,9 @@
 
 A Python utility to connect to a [Foxglove](https://foxglove.dev/) WebSocket server, decode messages (JSON and Protobuf),
 and relay them to a ZMQ server using either a PUSH/PULL or PUB/SUB pattern.
-![img/cli.png](img/cli.png)
+
+![An image of a terminal showing foxglove2zmq in use in PUSH-PULL mode](https://github.com/helkebir/foxglove2zmq/blob/d8069e67c35913e8dfc45393bf9378f5b6e0f211/img/cli.png)
+
 This is useful for integrating Foxglove data streams with other backend services, logging systems, or robotics
 frameworks that use ZMQ for messaging. Also includes a command-line interface (`foxglove2zmq`) for easy setup and
 configuration!
