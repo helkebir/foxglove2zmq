@@ -10,14 +10,14 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name="foxglove-zmq-relay",
+    name="foxglove2zmq",
     version="0.1.0",
     author="Your Name",
     author_email="ha.elkebir@gmail.com",
     description="A relay for forwarding Foxglove WebSocket messages to a ZMQ server.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/helkebir/foxglove-zmq-relay",
+    url="https://github.com/helkebir/foxglove2zmq",
     packages=find_packages(),
     install_requires=requirements,
     classifiers=[

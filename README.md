@@ -42,7 +42,7 @@ pip install foxglove-zmq-relay
 Alternatively, you can install it directly from the GitHub repository:
 
 ```bash
-pip install git+https://github.com/helkebir/foxglove-zmq-relay.git
+pip install git+https://github.com/helkebir/foxglove2zmq.git
 ```
 
 ## Usage
