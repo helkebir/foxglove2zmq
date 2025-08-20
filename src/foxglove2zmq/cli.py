@@ -25,6 +25,7 @@ def main():
     parser.add_argument(
         "-v", "--verbosity",
         required=False,
+        type=int,
         default=1,
         help="The verbosity level (0 = errors only, 1 = info, 2 = debug)."
     )

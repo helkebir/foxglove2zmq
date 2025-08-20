@@ -13,7 +13,14 @@ from google.protobuf import descriptor_pb2, descriptor_pool, message_factory, js
 # Opcodes for the Foxglove binary protocol
 OP_MESSAGE_DATA = 0x01
 OP_TIME = 0x02
+
+OP_CLIENT_PUBLISH = 0x01
+OP_SERVICE_CALL_REQUEST = 0x02
+
 OP_CODES_SUPPORTED = [OP_MESSAGE_DATA, OP_TIME]
+
+ENCODINGS_SUPPORTED = ["json", "protobuf"]
+CAPABILITIES_SUPPORTED = ["time", "clientPublish"]
 
 
 class FoxgloveToZMQRelay:
@@ -49,11 +56,26 @@ class FoxgloveToZMQRelay:
         self.context = zmq.asyncio.Context.instance()
         self.zmq_socket = None  # To be initialized by subclass
 
-        # Connection and channel state
+        # Connection, channel, parameter, and service state
         self.websocket = None
         self.channels_by_id = {}
+        self.id_by_channel_topics = {}
         self.subscriptions = {}
         self.protobuf_decoders = {}
+        self.parameters_by_id = {}
+
+        self.services_by_id = {}
+        self.protobuf_service_request_encoders = {}
+        self.protobuf_service_response_decoders = {}
+
+        # Foxglove server capabilities
+        self.has_clientPublish = False
+        self.has_parameters = False
+        self.has_parametersSubscribe = False
+        self.has_time = False
+        self.has_services = False
+        self.has_connectionGraph = False
+        self.has_assets = False
 
     def _init_zmq(self):
         """Initializes the specific ZMQ socket. Must be implemented by a subclass."""
@@ -62,6 +84,136 @@ class FoxgloveToZMQRelay:
     async def _send_msg(self, msg, topic=None):
         """Sends a message via the ZMQ socket. Must be implemented by a subclass."""
         raise NotImplementedError("Subclasses must implement _send_msg")
+
+    async def _process_connection(self):
+        """Processes the Foxglove websocket connection by checking server capabilities.
+
+        - Retrieves server info
+        - Discovers channels and prepares message decoders
+        - Registers parameters and services
+        """
+        print("📶 Parsing websocket connection...")
+        await self._parse_server_info()
+
+
+    def _has_capabilities(self, capability):
+        """Checks if the server is known to have a capability.
+
+        Args:
+            capability (str): The capability to check.
+
+        Notes:
+            Supported capabilities are:
+                - clientPublish: Allow clients to advertise channels to send data messages to the server
+                - parameters: Allow clients to get & set parameters
+                - parametersSubscribe: Allow clients to subscribe to parameter changes
+                - time: The server may publish binary time messages
+                - services: Allow clients to call services
+                - connectionGraph: Allow clients to subscribe to updates to the connection graph
+                - assets: Allow clients to fetch assets
+        """
+        return capability in self.server_capabilities
+
+    def _update_capabilities(self):
+        for capability in self.server_capabilities:
+            if capability == "clientPublish":
+                self.has_clientPublish = True
+            if capability == "parameters":
+                self.has_parameters = True
+            if capability == "parametersSubscribe":
+                self.has_parametersSubscribe = True
+            if capability == "time":
+                self.has_time = True
+            if capability == "services":
+                self.has_services = True
+            if capability == "connectionGraph":
+                self.has_connectionGraph = True
+            if capability == "assets":
+                self.has_assets = True
+
+
+    async def _parse_server_info(self):
+        """Parses Foxglove server information."""
+        print(f"🔎 Scanning Foxglove server connection for {self.discovery_timeout} seconds...")
+        start_time = asyncio.get_running_loop().time()
+
+        while (asyncio.get_running_loop().time() - start_time) < self.discovery_timeout:
+            try:
+                remaining_time = self.discovery_timeout - (asyncio.get_running_loop().time() - start_time)
+                if remaining_time <= 0:
+                    break
+
+                message = await asyncio.wait_for(self.websocket.recv(), timeout=remaining_time)
+                data = json.loads(message)
+                if data.get("op") == "advertise":
+                    self._process_channels(data)
+
+                if data.get("op") == "advertiseServices":
+                    self._process_services(data)
+
+                if data.get("op") == "serverInfo":
+                    self._process_server_info(data)
+
+            except asyncio.TimeoutError:
+                break
+
+        await self._subscribe_to_channels()
+        print("✅ Server scanning phase complete.")
+
+    def _process_server_info(self, data):
+        if self.verbosity >= 2:
+            print(f"🔎 Parsing server information...")
+
+        if data.get("op") == "serverInfo":
+            self.server_info = data
+            self.server_name = data.get("name", "")
+            self.server_capabilities = data.get("capabilities")
+            self.supported_encodings = data.get("supportedEncodings")
+            self._update_capabilities()
+
+            if self.verbosity >= 2:
+                if self.server_name != "":
+                    print(f"   - Found server name: '{self.server_name}'")
+                if self.supported_encodings:
+                    print("   - Found the following supported encodings:")
+                    for encoding in self.supported_encodings:
+                        if encoding in ENCODINGS_SUPPORTED:
+                            print(f"     - {encoding} (✅)")
+                        else:
+                            print(f"     - {encoding} (⚠️)")
+                if self.server_capabilities:
+                    print("   - Found the following server capabilities:")
+                    for capability in self.server_capabilities:
+                        if capability in CAPABILITIES_SUPPORTED:
+                            print(f"     - ✅ {capability}")
+                        else:
+                            print(f"     - ⚠️ {capability}")
+
+        if self.verbosity >= 2:
+            print("✅ Server info parsing phase complete.")
+
+
+    def _process_channels(self, data):
+        print("👂 Parsing channel advertisements...")
+        if data.get("op") == "advertise":
+            for channel in data.get("channels", []):
+                self._process_advertised_channel(channel)
+
+            if data.get("channels", []) == []:
+                print("⚠️ No channels were advertised by the server...")
+        else:
+            print("✅ Channel discovery phase complete.")
+
+    def _process_services(self, data):
+        print("👂 Parsing service advertisements...")
+        if data.get("op") == "advertiseServices":
+            for service in data.get("services", []):
+                self._process_advertised_service(service)
+
+            if data.get("services", []) == []:
+                print("⚠️ No services were advertised by the server...")
+        else:
+            print("✅ Service discovery phase complete.")
 
     async def _discover_channels(self):
         """Listens for channel advertisements and prepares Protobuf decoders."""
@@ -84,18 +236,61 @@ class FoxgloveToZMQRelay:
                 break
         print("✅ Channel discovery phase complete.")
 
+    def _in_blocklist(self, topic):
+        # interpret blocklist elements as regex expressions if they include *, otherwise directly compare strings
+        flagged = False
+
+        for block in self.topic_blocklist:
+            if not flagged:
+                if "*" in block:
+                    block = block.split("*")[0]
+                    if block in topic:
+                        flagged = True
+                else:
+                    if topic == block:
+                        flagged = True
+                        break
+            else:
+                break
+
+        return flagged
+
+    def _process_advertised_service(self, service):
+        """Processes a single advertised channel, ignoring blocklisted topics and setting up decoders."""
+        service_id = service.get("id")
+        name = service.get("name")
+
+        if self._in_blocklist(name):
+            if self.verbosity >= 2:
+                print(f"   - 🚫 Ignoring blocklisted service: '{name}'")
+            return
+
+        if service_id not in self.services_by_id:
+            self.services_by_id[service_id] = service
+            if self.verbosity >= 2:
+                print(f"   - Discovered service: '{name}' (ID: {service_id})")
+
+            if service.get("request").get("encoding") == "protobuf":
+                raise NotImplementedError("Protobuf service request encoding to be implemented.")
+
+            if service.get("response").get("encoding") == "protobuf":
+                raise NotImplementedError("Protobuf service response decoding to be implemented.")
+
     def _process_advertised_channel(self, channel):
         """Processes a single advertised channel, ignoring blocklisted topics and setting up decoders."""
         chan_id = channel.get("id")
         topic = channel.get("topic")
 
-        if topic in self.topic_blocklist:
-            print(f"   - 🚫 Ignoring blocklisted topic: '{topic}'")
+        if self._in_blocklist(topic):
+            if self.verbosity >= 2:
+                print(f"   - 🚫 Ignoring blocklisted topic: '{topic}'")
             return
 
         if chan_id not in self.channels_by_id:
+            self.id_by_channel_topics[topic] = chan_id
             self.channels_by_id[chan_id] = channel
-            print(f"   - Discovered topic: '{topic}' (ID: {chan_id})")
+            if self.verbosity >= 2:
+                print(f"   - Discovered topic: '{topic}' (ID: {chan_id})")
 
             if channel.get("encoding") == "protobuf":
                 self._prepare_protobuf_decoder(channel)
@@ -244,8 +439,7 @@ class FoxgloveToZMQRelay:
                 if self.verbosity >= 1:
                     print(f"✅ Connected to Foxglove WebSocket at {self.foxglove_address}")
 
-                await self._discover_channels()
-                await self._subscribe_to_channels()
+                await self._process_connection()
                 await self._process_messages()
 
         except (ConnectionRefusedError, websockets.exceptions.ConnectionClosed) as e:
@@ -302,9 +496,12 @@ if __name__ == "__main__":
         foxglove_address="ws://localhost:8765",
         zmq_address="tcp://*:5555",
         topic_blocklist=[
-            "/hh/points/all",
+            # "/hh/points/all",
+            "/hh/*",
+            "/viper/*"
         ],
-        discovery_timeout=2.0
+        discovery_timeout=2.0,
+        verbosity=2,
     )
 
     # # PUB/SUB Example: Publishes messages on topics for SUB clients to filter.

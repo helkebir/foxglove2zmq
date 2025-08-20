@@ -29,9 +29,10 @@ decode binary payloads into JSON.
 [`ClientPublish` messages](https://docs.foxglove.dev/docs/sdk/websocket-server#handling-messages-from-the-app)
 and [`Parameter` updates](https://docs.foxglove.dev/docs/visualization/panels/parameters).
 - [ ] Add support for other [binary messages](https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#binary-messages):
-  - [x] `0x02` - Time
+  - [x] ~~`0x02` - Time~~
   - [ ] `0x03` - Service call responses
   - [ ] `0x04` - Fetch asset responses
+- [ ] Add support for Flatpack encoded messages and ROS1/ROS2 message types.
 
 ## Installation
 
@@ -46,6 +47,14 @@ Alternatively, you can install it directly from the GitHub repository:
 ```bash
 pip install git+https://github.com/helkebir/foxglove2zmq.git
 ```
+
+### Dependencies
+
+This package requires Python 3.9 or higher and the following dependencies:
+
+- `websockets>=10.0`: For WebSocket communication with the Foxglove server.
+- `pyzmq>=22.0`: For ZeroMQ communication.
+- `protobuf>=3.19`: For Protobuf message decoding.
 
 ## Usage
 
