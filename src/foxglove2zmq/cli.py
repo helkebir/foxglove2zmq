@@ -18,9 +18,15 @@ def main():
         help="The WebSocket URL of the Foxglove server (e.g., ws://localhost:8765)."
     )
     parser.add_argument(
-        "-z", "--zmq-bind",
+        "-i", "--incoming",
         required=True,
-        help="The TCP address for the ZMQ server to bind to (e.g., tcp://localhost:5555)."
+        help="The TCP address for the incoming ZMQ server to bind to (e.g., tcp://localhost:5555)."
+    )
+    parser.add_argument(
+        "-o", "--outgoing",
+        required=False,
+        default=None,
+        help="The TCP address for the outgoing ZMQ server to bind to (e.g., tcp://localhost:5556)."
     )
     parser.add_argument(
         "-v", "--verbosity",
@@ -51,7 +57,8 @@ def main():
 
     relay = relay_class(
         foxglove_address=args.foxglove_ws,
-        zmq_address=args.zmq_bind,
+        zmq_address=args.outgoing,
+        zmq_listen_address=args.incoming,
         topic_blocklist=args.blocklist,
         discovery_timeout=args.timeout,
         verbosity=args.verbosity

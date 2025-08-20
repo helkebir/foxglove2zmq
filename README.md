@@ -1,12 +1,13 @@
 # Foxglove to ZMQ Relay
 
 A Python utility to connect to a [Foxglove](https://foxglove.dev/) WebSocket server, decode messages (JSON and Protobuf),
-and relay them to a ZMQ server using either a PUSH/PULL or PUB/SUB pattern.
+and relay them to _and_ from a ZMQ server using either a PUSH/PULL or PUB/SUB pattern.
 
 ![An image of a terminal showing foxglove2zmq in use in PUSH-PULL mode](https://github.com/helkebir/foxglove2zmq/blob/d8069e67c35913e8dfc45393bf9378f5b6e0f211/img/cli.png)
 
 This is useful for integrating Foxglove data streams with other backend services, logging systems, or robotics
-frameworks that use ZMQ for messaging. Also includes a command-line interface (`foxglove2zmq`) for easy setup and
+frameworks that use ZMQ for messaging. The relay is also bi-directional: Client publishing is fully supported from ZMQ
+to Foxglove. Also includes a command-line interface (`foxglove2zmq`) for easy setup and
 configuration!
 
 ## Features
@@ -17,7 +18,11 @@ configuration!
 * **Multi-Encoding Support**: Decodes both standard `json` and `protobuf` encoded messages on the fly.  
 * **Dynamic Protobuf Decoding**: Parses Protobuf schemas
 ([`FileDescriptorSet`](https://protobuf.dev/programming-guides/techniques/#self-description)) provided by the server to
-decode binary payloads into JSON.  
+decode binary payloads into JSON.
+* **Bi-Directional Communication**:  
+  * Supports sending messages from ZMQ to Foxglove using `ClientPublish` messages without any setup.  
+  * Can handle parameter updates and other client-side interactions.  
+* **Command-Line Interface**: Provides a simple CLI for running the relay with various options.
 * **Flexible ZMQ Patterns**:  
   * `PUSH/PULL`: Relays all messages to a single stream for worker distribution.  
   * `PUB/SUB`: Publishes messages on their original Foxglove topic for selective subscription.  
@@ -25,10 +30,11 @@ decode binary payloads into JSON.
 
 ### Todo
 
-- [ ] Add support for bi-directional messaging with
-[`ClientPublish` messages](https://docs.foxglove.dev/docs/sdk/websocket-server#handling-messages-from-the-app)
-and [`Parameter` updates](https://docs.foxglove.dev/docs/visualization/panels/parameters).
+- [x] Add support for bi-directional messaging with:
+  - [x] ~~[`ClientPublish` messages](https://docs.foxglove.dev/docs/sdk/websocket-server#handling-messages-from-the-app)~~
+  - [ ] [`Parameter` updates](https://docs.foxglove.dev/docs/visualization/panels/parameters).
 - [ ] Add support for other [binary messages](https://github.com/foxglove/ws-protocol/blob/main/docs/spec.md#binary-messages):
+  - [x] `0x01` - Client channel responses
   - [x] ~~`0x02` - Time~~
   - [ ] `0x03` - Service call responses
   - [ ] `0x04` - Fetch asset responses
@@ -164,6 +170,7 @@ async def main():
     push_relay = FoxgloveToZMQPushRelay(
         foxglove_address="ws://localhost:8765",
         zmq_address="tcp://localhost:5555",
+        zmq_listen_address="tcp://localhost:5556",
         topic_blocklist=["/diagnostics"],
         discovery_timeout=5.0
     )
@@ -185,6 +192,7 @@ including both `PUSH/PULL` and `PUB/SUB` patterns. First install the package, th
 1. `zmq_relay.py`: A simple script to run the relay, must be run first. Defaults to `PUSH/PULL` mode on ZMQ bind `tcp://localhost:5555`.
 2. `zmq_puller.py`: A ZMQ `PULL` client that connects to the relay and prints received messages.
 3. `zmq_subber.py`: A ZMQ `SUB` client that connects to the relay and subscribes to all topics.
+4. `zmq_pusher.py`: A ZMQ `PUSH` client that sends messages to the relay, which will then be relayed to Foxglove.
 
 ## **Project Structure**
 
@@ -196,8 +204,10 @@ foxglove2zmq/
 │       ├── relay.py
 │       └── cli.py
 ├── examples/
-│   ├── zmq_puller.py 
-│   └── zmq_relay.py
+│   ├── zmq_puller.py
+│   ├── zmq_pusher.py 
+│   ├── zmq_relay.py
+│   └── zmq_subber.py
 ├── LICENSE.md
 ├── pyproj.toml
 ├── README.md
