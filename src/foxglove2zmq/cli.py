@@ -18,15 +18,15 @@ def main():
         help="The WebSocket URL of the Foxglove server (e.g., ws://localhost:8765)."
     )
     parser.add_argument(
-        "-i", "--incoming",
+        "-o", "--outgoing",
         required=True,
-        help="The TCP address for the incoming ZMQ server to bind to (e.g., tcp://localhost:5555)."
+        help="The TCP address for the outgoing ZMQ server to bind to (e.g., tcp://localhost:5555)."
     )
     parser.add_argument(
-        "-o", "--outgoing",
+        "-i", "--incoming",
         required=False,
         default=None,
-        help="The TCP address for the outgoing ZMQ server to bind to (e.g., tcp://localhost:5556)."
+        help="The TCP address for the incoming ZMQ server to bind to (e.g., tcp://localhost:5556)."
     )
     parser.add_argument(
         "-v", "--verbosity",

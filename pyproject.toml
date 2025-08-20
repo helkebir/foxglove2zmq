@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foxglove2zmq"
-version = "0.1.2"
+version = "0.1.2.1"
 authors = [
   { name="Hamza El-Kebir", email="ha.elkebir@gmail.com" },
 ]

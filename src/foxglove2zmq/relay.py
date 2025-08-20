@@ -425,6 +425,7 @@ class FoxgloveToZMQPushRelay(FoxgloveToZMQRelay):
         if self.verbosity >= 1: print("🔧 Initializing ZMQ PUSH socket for sending.")
         self.zmq_socket = self.context.socket(zmq.PUSH)
         self.zmq_socket.bind(self.zmq_address)
+        if self.verbosity >= 1: print(f"✅ Connected to ZMQ PUSH socket at {self.zmq_address}")
 
     async def _send_msg(self, msg, topic=None):
         await self.zmq_socket.send_string(msg)
@@ -437,6 +438,7 @@ class FoxgloveToZMQPubSubRelay(FoxgloveToZMQRelay):
         if self.verbosity >= 1: print("🔧 Initializing ZMQ PUB socket for sending.")
         self.zmq_socket = self.context.socket(zmq.PUB)
         self.zmq_socket.bind(self.zmq_address)
+        if self.verbosity >= 1: print(f"✅ Connected to ZMQ PUB socket at {self.zmq_address}")
 
     async def _send_msg(self, msg, topic=None):
         if topic: await self.zmq_socket.send_multipart([topic.encode('utf-8'), msg.encode('utf-8')])

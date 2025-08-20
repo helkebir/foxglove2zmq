@@ -3,7 +3,7 @@
 A Python utility to connect to a [Foxglove](https://foxglove.dev/) WebSocket server, decode messages (JSON and Protobuf),
 and relay them to _and_ from a ZMQ server using either a PUSH/PULL or PUB/SUB pattern.
 
-![An image of a terminal showing foxglove2zmq in use in PUSH-PULL mode](https://github.com/helkebir/foxglove2zmq/blob/d8069e67c35913e8dfc45393bf9378f5b6e0f211/img/cli.png)
+![An image of a terminal showing foxglove2zmq in use in PUSH-PULL mode](https://raw.githubusercontent.com/helkebir/foxglove2zmq/main/img/cli.png)
 
 This is useful for integrating Foxglove data streams with other backend services, logging systems, or robotics
 frameworks that use ZMQ for messaging. The relay is also bi-directional: Client publishing is fully supported from ZMQ
@@ -78,7 +78,7 @@ foxglove2zmq --help
 ```
 
 ```
-usage: foxglove2zmq [-h] -p {push,pub} [-w FOXGLOVE_WS] -z ZMQ_BIND [-v VERBOSITY] [-b [BLOCKLIST ...]] [--timeout TIMEOUT]
+usage: foxglove2zmq [-h] -p {push,pub} [-w FOXGLOVE_WS] -o OUTGOING [-i INCOMING] [-v VERBOSITY] [-b [BLOCKLIST ...]] [--timeout TIMEOUT]
 
 Relay Foxglove WebSocket messages to a ZMQ server.
 
@@ -88,8 +88,10 @@ optional arguments:
                         The ZMQ socket pattern to use ('push' for PUSH/PULL or 'pub' for PUB/SUB).
   -w FOXGLOVE_WS, --foxglove-ws FOXGLOVE_WS
                         The WebSocket URL of the Foxglove server (e.g., ws://localhost:8765).
-  -z ZMQ_BIND, --zmq-bind ZMQ_BIND
-                        The TCP address for the ZMQ server to bind to (e.g., tcp://localhost:5555).
+  -o OUTGOING, --outgoing OUTGOING
+                        The TCP address for the outgoing ZMQ server to bind to (e.g., tcp://localhost:5555).
+  -i INCOMING, --incoming INCOMING
+                        The TCP address for the incoming ZMQ server to bind to (e.g., tcp://localhost:5556).
   -v VERBOSITY, --verbosity VERBOSITY
                         The verbosity level (0 = errors only, 1 = info, 2 = debug).
   -b [BLOCKLIST ...], --blocklist [BLOCKLIST ...]
